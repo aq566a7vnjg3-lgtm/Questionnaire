@@ -657,7 +657,7 @@ function subDiv(body, txt){
 }
 
 function formatPhone(raw){
-  const digits = raw.replace(/\D/g,'');
+  const digits = normalizeDigits(raw).replace(/\D/g,'');
   // 携帯・IP電話 (050/070/080/090) → 3-4-4、最大11桁
   if(/^0[5789]0/.test(digits)){
     const d=digits.slice(0,11);
@@ -685,6 +685,12 @@ function formatPhone(raw){
   if(d.length<=4) return d;
   if(d.length<=6) return d.slice(0,4)+'-'+d.slice(4);
   return d.slice(0,4)+'-'+d.slice(4,6)+'-'+d.slice(6);
+}
+
+function normalizeDigits(raw){
+  return String(raw || '').replace(/[０-９]/g, ch =>
+    String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)
+  );
 }
 
 /* ======================
@@ -1043,9 +1049,15 @@ const steps = [
     fields.slice(2).forEach(([k,l,p]) => {
       const wrap = tf(l, k, p); inputs[k] = wrap.querySelector('input'); b.appendChild(wrap);
     });
-    // 電話番号：ハイフン自動入力
+    // 電話番号：iPadの変換中入力を邪魔しないよう、入力中は書き換えずフォーカスアウト時に整形
     ['ct1','ct2'].forEach(key => {
+      inputs[key].type = 'tel';
+      inputs[key].inputMode = 'tel';
+      inputs[key].autocomplete = 'tel';
       inputs[key].oninput = e => {
+        D[key] = normalizeDigits(e.target.value);
+      };
+      inputs[key].onblur = e => {
         const fmt = formatPhone(e.target.value);
         D[key] = fmt;
         e.target.value = fmt;
