@@ -580,7 +580,7 @@ const D = {
   q9:[], q9_amt:'',
   q10:'', q10_amt:'',
   q11_co:'', q11_sel:'',
-  q12_car:'', q12_yr:'', q12_km:'', q12_sh:'', q12_buy:'', q12_shop:'',
+  q12_car:'', q12_yr:'', q12_km:'', q12_sh_y:'', q12_sh_m:'', q12_buy:'', q12_shop:'',
   cf:'', cn:'', cb_y:'', cb_m:'', cb_d:'', ct1:'', ct2:'', ce:'', cz:'', ca:'', cj:'', cfam:''
 };
 
@@ -935,27 +935,43 @@ const steps = [
   function(){
     set('現在お乗りのお車についてお聞かせください。','任意でご記入ください（スキップ可）','次へ');
     const b = qb();
-    const fields = [
-      ['q12_car','車名','例：Honda N-BOX'],
-      ['q12_yr','年式','例：R3年式'],
-      ['q12_km','走行距離','例：35,000km'],
-      ['q12_sh','次回車検','例：令和8年3月'],
-      ['q12_buy','ご購入先','例：Honda Cars ○○'],
-      ['q12_shop','現在のメンテナンス店','例：Honda Cars ○○'],
-    ];
-    const inputs = {};
-    fields.forEach(([k,l,p]) => {
-      const wrap = tf(l, k, p);
-      inputs[k] = wrap.querySelector('input');
-      b.appendChild(wrap);
-    });
-    // 走行距離：カンマ区切り自動整形
-    inputs['q12_km'].oninput = e => {
-      const raw = e.target.value.replace(/[^\d]/g, '');
-      const fmt = raw ? raw.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
-      D.q12_km = fmt;
-      e.target.value = fmt;
+    // 車名・年式
+    [['q12_car','車名','例：Honda N-BOX'],['q12_yr','年式','例：R3年式']].forEach(([k,l,p])=>b.appendChild(tf(l,k,p)));
+    // 走行距離（カンマ区切り）
+    const kmWrap=tf('走行距離','q12_km','例：35,000km');
+    kmWrap.querySelector('input').oninput=e=>{
+      const raw=e.target.value.replace(/[^\d]/g,'');
+      const fmt=raw?raw.replace(/\B(?=(\d{3})+(?!\d))/g,','):'';
+      D.q12_km=fmt; e.target.value=fmt;
     };
+    b.appendChild(kmWrap);
+    // 次回車検（ドロップダウン）
+    (function(){
+      const w=document.createElement('div'); w.className='tf-wrap';
+      const lbl=document.createElement('div'); lbl.className='tf-lbl'; lbl.textContent='次回車検';
+      const row=document.createElement('div'); row.className='dob-row';
+      const sy=document.createElement('select'); sy.className='dob-sel dob-yr';
+      sy.innerHTML='<option value="">年（未選択）</option>';
+      for(let r=7;r<=15;r++){
+        const op=document.createElement('option');
+        op.value=`R${r}`; op.textContent=`令和${r}年`;
+        if(D.q12_sh_y===`R${r}`) op.selected=true;
+        sy.appendChild(op);
+      }
+      sy.onchange=e=>D.q12_sh_y=e.target.value;
+      const sm=document.createElement('select'); sm.className='dob-sel';
+      sm.innerHTML='<option value="">月（未選択）</option>';
+      for(let m=1;m<=12;m++){
+        const op=document.createElement('option');
+        op.value=String(m); op.textContent=`${m}月`;
+        if(D.q12_sh_m===String(m)) op.selected=true;
+        sm.appendChild(op);
+      }
+      sm.onchange=e=>D.q12_sh_m=e.target.value;
+      row.append(sy,sm); w.append(lbl,row); b.appendChild(w);
+    })();
+    // 購入先・メンテ店
+    [['q12_buy','ご購入先','例：Honda Cars ○○'],['q12_shop','現在のメンテナンス店','例：Honda Cars ○○']].forEach(([k,l,p])=>b.appendChild(tf(l,k,p)));
   },
   // 12: お客様情報
   function(){
@@ -1159,7 +1175,8 @@ function buildA4(){
 
   const carRows = [
     ['車名',d.q12_car],['年式',d.q12_yr],['走行距離',d.q12_km],
-    ['次回車検',d.q12_sh],['購入先',d.q12_buy],['メンテ店',d.q12_shop]
+    ['次回車検',d.q12_sh_y?(d.q12_sh_y+(d.q12_sh_m?` ${d.q12_sh_m}月`:'')):d.q12_sh_m?`${d.q12_sh_m}月`:''],
+    ['購入先',d.q12_buy],['メンテ店',d.q12_shop]
   ].filter(([,v])=>v);
 
   document.getElementById('a4').innerHTML = `
