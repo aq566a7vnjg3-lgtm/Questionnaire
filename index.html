@@ -147,6 +147,21 @@ body {
 .tf-in:focus { border-color: #ec6c00; }
 .tf-in::placeholder { color: #bbb; }
 
+/* DOB dropdown row */
+.dob-row { display:flex; gap:8px; }
+.dob-sel {
+  flex:1; background:#f7f7f7; border:2px solid #e8e8e8;
+  border-radius:11px; padding:14px 10px; color:#1a1a1a;
+  font-size:16px; font-family:inherit; outline:none;
+  transition:border-color .15s; appearance:none;
+  -webkit-appearance:none; cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23aaa' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center;
+  padding-right:28px;
+}
+.dob-sel:focus { border-color:#ec6c00; }
+.dob-sel.dob-yr { flex:2.2; font-size:14px; }
+
 /* Slideshow background */
 .slide-bg {
   position: absolute;
@@ -566,7 +581,7 @@ const D = {
   q10:'', q10_amt:'',
   q11_co:'', q11_sel:'',
   q12_car:'', q12_yr:'', q12_km:'', q12_sh:'', q12_buy:'', q12_shop:'',
-  cf:'', cn:'', cb:'', ct1:'', ct2:'', ce:'', cz:'', ca:'', cj:'', cfam:''
+  cf:'', cn:'', cb_y:'', cb_m:'', cb_d:'', ct1:'', ct2:'', ce:'', cz:'', ca:'', cj:'', cfam:''
 };
 
 // auto date
@@ -949,7 +964,6 @@ const steps = [
     const fields = [
       ['cf','フリガナ（必須）','ヤマダ タロウ'],
       ['cn','お名前（必須）','山田 太郎'],
-      ['cb','生年月日','例：S60.3.15（満40歳）'],
       ['ct1','携帯電話（必須）','090-0000-0000'],
       ['ct2','ご自宅電話','0742-00-0000'],
       ['ce','メールアドレス','example@email.com'],
@@ -959,10 +973,59 @@ const steps = [
       ['cfam','ご家族人数','例：3人'],
     ];
     const inputs = {};
-    fields.forEach(([k,l,p]) => {
-      const wrap = tf(l, k, p);
-      inputs[k] = wrap.querySelector('input');
-      b.appendChild(wrap);
+    // お名前 / フリガナ を先に配置
+    fields.slice(0,2).forEach(([k,l,p]) => {
+      const wrap = tf(l, k, p); inputs[k] = wrap.querySelector('input'); b.appendChild(wrap);
+    });
+    // 生年月日ドロップダウン
+    (function(){
+      function toWareki(y){
+        if(y>=2019) return `令和${y-2018}年`;
+        if(y>=1989) return `平成${y-1988}年`;
+        if(y>=1926) return `昭和${y-1925}年`;
+        if(y>=1912) return `大正${y-1911}年`;
+        if(y>=1868) return `明治${y-1867}年`;
+        return '';
+      }
+      const w=document.createElement('div'); w.className='tf-wrap';
+      const lbl=document.createElement('div'); lbl.className='tf-lbl'; lbl.textContent='生年月日';
+      const row=document.createElement('div'); row.className='dob-row';
+      // 年
+      const sy=document.createElement('select'); sy.className='dob-sel dob-yr';
+      sy.innerHTML='<option value="">年を選択</option>';
+      const curY=new Date().getFullYear();
+      for(let y=curY;y>=1920;y--){
+        const op=document.createElement('option');
+        op.value=String(y); op.textContent=`${y}年（${toWareki(y)}）`;
+        if(D.cb_y===String(y)) op.selected=true;
+        sy.appendChild(op);
+      }
+      sy.onchange=e=>D.cb_y=e.target.value;
+      // 月
+      const sm=document.createElement('select'); sm.className='dob-sel';
+      sm.innerHTML='<option value="">月</option>';
+      for(let m=1;m<=12;m++){
+        const op=document.createElement('option');
+        op.value=String(m); op.textContent=`${m}月`;
+        if(D.cb_m===String(m)) op.selected=true;
+        sm.appendChild(op);
+      }
+      sm.onchange=e=>D.cb_m=e.target.value;
+      // 日
+      const sd=document.createElement('select'); sd.className='dob-sel';
+      sd.innerHTML='<option value="">日</option>';
+      for(let d=1;d<=31;d++){
+        const op=document.createElement('option');
+        op.value=String(d); op.textContent=`${d}日`;
+        if(D.cb_d===String(d)) op.selected=true;
+        sd.appendChild(op);
+      }
+      sd.onchange=e=>D.cb_d=e.target.value;
+      row.append(sy,sm,sd); w.append(lbl,row); b.appendChild(w);
+    })();
+    // 残りのフィールド
+    fields.slice(2).forEach(([k,l,p]) => {
+      const wrap = tf(l, k, p); inputs[k] = wrap.querySelector('input'); b.appendChild(wrap);
     });
     // 電話番号：ハイフン自動入力
     ['ct1','ct2'].forEach(key => {
@@ -1113,7 +1176,7 @@ function buildA4(){
       <div class="a4-cust-grid">
         <div class="a4-crow"><span class="a4-cl">フリガナ</span><span class="a4-cv">${d.cf||''}</span></div>
         <div class="a4-crow"><span class="a4-cl">携帯電話</span><span class="a4-cv">${d.ct1||''}</span></div>
-        <div class="a4-crow"><span class="a4-cl">生年月日</span><span class="a4-cv">${d.cb||''}</span></div>
+        <div class="a4-crow"><span class="a4-cl">生年月日</span><span class="a4-cv">${d.cb_y&&d.cb_m&&d.cb_d ? `${d.cb_y}年${d.cb_m}月${d.cb_d}日` : (d.cb_y||'')}</span></div>
         <div class="a4-crow"><span class="a4-cl">お名前</span><span class="a4-cv" style="font-size:12px;font-weight:900;">${d.cn||''}&nbsp;様</span></div>
         <div class="a4-crow"><span class="a4-cl">ご自宅電話</span><span class="a4-cv">${d.ct2||''}</span></div>
         <div class="a4-crow"><span class="a4-cl">ご家族人数</span><span class="a4-cv">${d.cfam||''}</span></div>
