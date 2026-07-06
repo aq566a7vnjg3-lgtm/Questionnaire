@@ -641,6 +641,37 @@ function subDiv(body, txt){
   body.appendChild(d);
 }
 
+function formatPhone(raw){
+  const digits = raw.replace(/\D/g,'');
+  // 携帯・IP電話 (050/070/080/090) → 3-4-4、最大11桁
+  if(/^0[5789]0/.test(digits)){
+    const d=digits.slice(0,11);
+    if(d.length<=3) return d;
+    if(d.length<=7) return d.slice(0,3)+'-'+d.slice(3);
+    return d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7);
+  }
+  const d=digits.slice(0,10);
+  // 大都市固定 (03/06) → 2-4-4
+  if(/^0[36]/.test(d)){
+    if(d.length<=2) return d;
+    if(d.length<=6) return d.slice(0,2)+'-'+d.slice(2);
+    return d.slice(0,2)+'-'+d.slice(2,6)+'-'+d.slice(6);
+  }
+  // 主要3桁市外局番 → 3-3-4
+  const m3=['011','012','017','018','019','022','023','024','025','026','027','028','029',
+    '042','043','044','045','046','047','048','052','053','054','055','076','077','078','079',
+    '082','083','084','086','087','088','089','092','093','095','096','097','098','099'];
+  if(m3.some(p=>d.startsWith(p))){
+    if(d.length<=3) return d;
+    if(d.length<=6) return d.slice(0,3)+'-'+d.slice(3);
+    return d.slice(0,3)+'-'+d.slice(3,6)+'-'+d.slice(6);
+  }
+  // 地方4桁局番 → 4-2-4（例: 0742-XX-XXXX）
+  if(d.length<=4) return d;
+  if(d.length<=6) return d.slice(0,4)+'-'+d.slice(4);
+  return d.slice(0,4)+'-'+d.slice(4,6)+'-'+d.slice(6);
+}
+
 /* ======================
    SLIDESHOW
    ====================== */
@@ -888,30 +919,79 @@ const steps = [
   // 11: Q12 現在の車
   function(){
     set('現在お乗りのお車についてお聞かせください。','任意でご記入ください（スキップ可）','次へ');
-    const b=qb();
-    [['q12_car','車名','例：Honda N-BOX'],
-     ['q12_yr','年式','例：R3年式'],
-     ['q12_km','走行距離','例：35,000km'],
-     ['q12_sh','次回車検','例：令和8年3月'],
-     ['q12_buy','ご購入先','例：Honda Cars ○○'],
-     ['q12_shop','現在のメンテナンス店','例：Honda Cars ○○'],
-    ].forEach(([k,l,p])=>b.appendChild(tf(l,k,p)));
+    const b = qb();
+    const fields = [
+      ['q12_car','車名','例：Honda N-BOX'],
+      ['q12_yr','年式','例：R3年式'],
+      ['q12_km','走行距離','例：35,000km'],
+      ['q12_sh','次回車検','例：令和8年3月'],
+      ['q12_buy','ご購入先','例：Honda Cars ○○'],
+      ['q12_shop','現在のメンテナンス店','例：Honda Cars ○○'],
+    ];
+    const inputs = {};
+    fields.forEach(([k,l,p]) => {
+      const wrap = tf(l, k, p);
+      inputs[k] = wrap.querySelector('input');
+      b.appendChild(wrap);
+    });
+    // 走行距離：カンマ区切り自動整形
+    inputs['q12_km'].oninput = e => {
+      const raw = e.target.value.replace(/[^\d]/g, '');
+      const fmt = raw ? raw.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
+      D.q12_km = fmt;
+      e.target.value = fmt;
+    };
   },
   // 12: お客様情報
   function(){
     set('お客様情報をご記入ください。','お名前と携帯電話は必須です','次へ');
-    const b=qb();
-    [['cf','フリガナ（必須）','ヤマダ タロウ'],
-     ['cn','お名前（必須）','山田 太郎'],
-     ['cb','生年月日','例：S60.3.15（満40歳）'],
-     ['ct1','携帯電話（必須）','090-0000-0000'],
-     ['ct2','ご自宅電話','0742-00-0000'],
-     ['ce','メールアドレス','example@email.com'],
-     ['cz','郵便番号','630-0000'],
-     ['ca','ご住所','奈良県奈良市○○町0-0'],
-     ['cj','ご職業','会社員・自営業など'],
-     ['cfam','ご家族人数','例：3人'],
-    ].forEach(([k,l,p])=>b.appendChild(tf(l,k,p)));
+    const b = qb();
+    const fields = [
+      ['cf','フリガナ（必須）','ヤマダ タロウ'],
+      ['cn','お名前（必須）','山田 太郎'],
+      ['cb','生年月日','例：S60.3.15（満40歳）'],
+      ['ct1','携帯電話（必須）','090-0000-0000'],
+      ['ct2','ご自宅電話','0742-00-0000'],
+      ['ce','メールアドレス','example@email.com'],
+      ['cz','郵便番号','630-0000'],
+      ['ca','ご住所','奈良県奈良市○○町0-0'],
+      ['cj','ご職業','会社員・自営業など'],
+      ['cfam','ご家族人数','例：3人'],
+    ];
+    const inputs = {};
+    fields.forEach(([k,l,p]) => {
+      const wrap = tf(l, k, p);
+      inputs[k] = wrap.querySelector('input');
+      b.appendChild(wrap);
+    });
+    // 電話番号：ハイフン自動入力
+    ['ct1','ct2'].forEach(key => {
+      inputs[key].oninput = e => {
+        const fmt = formatPhone(e.target.value);
+        D[key] = fmt;
+        e.target.value = fmt;
+      };
+    });
+    // 郵便番号→住所 自動入力
+    inputs['cz'].oninput = e => {
+      D.cz = e.target.value;
+      const zip = e.target.value.replace(/-/g, '');
+      if(zip.length === 7){
+        fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${zip}`)
+          .then(r => r.json())
+          .then(data => {
+            if(data.results){
+              const r = data.results[0];
+              const addr = r.address1 + r.address2 + r.address3;
+              D.ca = addr;
+              inputs['ca'].value = addr;
+              inputs['ca'].style.borderColor = '#ec6c00';
+              setTimeout(() => inputs['ca'].style.borderColor = '', 1500);
+            }
+          })
+          .catch(() => {});
+      }
+    };
   }
 ];
 
