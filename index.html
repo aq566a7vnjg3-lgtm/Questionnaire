@@ -593,7 +593,7 @@ const D = {
 
 let step = 0;
 const TOTAL = 15;
-const EV_CARS = ['N-VAN e:','N-ONE e:','Super-ONE'];
+const EV_CARS = ['N-VAN e:','N-ONE e:','INSIGHT','Super-ONE'];
 
 /* ======================
    HELPERS
@@ -809,12 +809,12 @@ const steps = [
   function(){
     set('当社で興味のあるお車を教えてください。','複数選択できます','次へ');
     const cats = [
-      ['コンパクト',['FIT（ハイブリッド）']],
-      ['SUV',['VEZEL（ハイブリッド）','ZR-V（ハイブリッド）','WR-V','CR-V（ハイブリッド）']],
-      ['ミニバン',['FREED（ハイブリッド）','STEP WGN（ハイブリッド）','ODYSSEY（ハイブリッド）']],
-      ['軽自動車',['N-BOX / N-BOX JOY','N-WGN','N-ONE']],
-      ['セダン・スポーツ',['ACCORD（ハイブリッド）','INSIGHT（ハイブリッド）','Civic TYPE R','PRELUDE（ハイブリッド）']],
-      ['電気自動車（EV）',['N-VAN e:','N-ONE e:','Super-ONE']],
+      ['コンパクト',['FIT（ガソリン/ハイブリッド）']],
+      ['SUV',['VEZEL（ハイブリッド）','ZR-V（ガソリン/ハイブリッド）','WR-V（ガソリン）','CR-V（ハイブリッド）']],
+      ['ミニバン',['FREED（ガソリン/ハイブリッド）','STEP WGN（ガソリン/ハイブリッド）','ODYSSEY（ハイブリッド）']],
+      ['軽自動車',['N-BOX / N-BOX JOY（ガソリン）','N-WGN（ガソリン）','N-ONE（ガソリン）']],
+      ['セダン・スポーツ',['ACCORD（ハイブリッド）','CIVIC（ガソリン/ハイブリッド）','CIVIC TYPE R（ガソリン）','PRELUDE（ハイブリッド）']],
+      ['電気自動車（EV）',['N-VAN e:','N-ONE e:','INSIGHT','Super-ONE']],
       ['その他',['商用車 N-VAN','福祉車両 N-BOX（福祉）','中古車','その他']],
     ];
     const b = qb();
